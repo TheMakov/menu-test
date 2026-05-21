@@ -1,38 +1,91 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Ports;
-
+using System.Threading;
 using UnityEngine;
 public class ArduinoTest : MonoBehaviour
 {
     public ControllerInfo inputs = new ControllerInfo();
     private List<int> _dataList = new List<int>();
     private SerialPort _port;
+    private ConcurrentQueue<string> _lineQueue = new ConcurrentQueue<string>();
+    
+    private Thread _serialThread;
+    private bool _isThreadRunning = false;
 
     void Start()
     {
-        //TODO: ckeck if any port is working
         OpenPort();
     }
 
     public void OpenPort()
     {
         var ports = SerialPort.GetPortNames();
-        _port = new SerialPort(ports[^1], 9600);
-        _port.Open();   
+        if (ports.Length == 0) return;
+        string targetPort = System.Array.Find(ports, name => name.Contains("usb") || name.Contains("modem")) ?? ports[^1];
+    
+        
+        _port = new SerialPort(targetPort, 9600);
+        
+        // Critical for thread cleanup later so it doesn't hang the editor
+        _port.ReadTimeout = 200; 
+        _port.WriteTimeout = 200;
+        
+        try
+        {
+            _port.Open();   
+            _isThreadRunning = true;
+            _serialThread = new Thread(ReadSerialLoop);
+            _serialThread.Start();
+            Debug.Log($"Successfully opened {targetPort}");
+
+            // Start your background thread here...
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to open port {targetPort}: {e.Message}");
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        string value = _port.ReadLine();
-        parseString(value);
-        var dataString = "";
-        foreach (var data in _dataList)
+        while (_lineQueue.TryDequeue(out string freshValue))
         {
-            dataString += data + ";";
+            parseString(freshValue);
+            var dataString = "";
+            foreach (var data in _dataList)
+            {
+                dataString += data + ";";
+            }
+            TranslateToUnityInputs();
         }
-        TranslateToUnityInputs();
+        
+    }
+
+    void ReadSerialLoop()
+    {
+        while (_isThreadRunning && _port != null && _port.IsOpen)
+        {
+            try
+            {
+                string value = _port.ReadLine();
+                if (!string.IsNullOrEmpty(value))
+                {
+                    // Safely pass the data string over to the queue
+                    _lineQueue.Enqueue(value);
+                }
+            }
+            catch (System.TimeoutException e)
+            {
+                
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Serial read error: {e.Message}");
+            }
+        }
     }
 
     private void parseString(string inputs)
