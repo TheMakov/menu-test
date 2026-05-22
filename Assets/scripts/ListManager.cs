@@ -57,7 +57,7 @@ public class ListManager : MonoBehaviour
                 continue;
             }
             Debug.Log("trying to Reconect");
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(.1f);
             try
             {
                 arduino.OpenPort();

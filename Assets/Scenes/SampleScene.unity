@@ -7132,7 +7132,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1739702886523478744, guid: 707fd08cd8e3f514e82fcc583560e5f8, type: 3}
       propertyPath: path
-      value: /execs/rocket
+      value: \execs\rocket\
       objectReference: {fileID: 0}
     - target: {fileID: 1739702886523478744, guid: 707fd08cd8e3f514e82fcc583560e5f8, type: 3}
       propertyPath: execName
