@@ -48,8 +48,14 @@ public class ListManager : MonoBehaviour
     
     IEnumerator TryToReconect()
     {
+       
         for (int i = 0; i<100000; i++)
         {
+            if (arduino.gameIsRunning)
+            {
+                yield return new WaitForSeconds(2f);
+                continue;
+            }
             Debug.Log("trying to Reconect");
             yield return new WaitForSeconds(1);
             try
@@ -62,6 +68,7 @@ public class ListManager : MonoBehaviour
                 Console.WriteLine(e);
             }
         }
+        
     }
     private void Update()
     {

@@ -7,6 +7,7 @@ using UnityEngine;
 public class ArduinoTest : MonoBehaviour
 {
     public ControllerInfo inputs = new ControllerInfo();
+    public bool gameIsRunning = false;
     private List<int> _dataList = new List<int>();
     private SerialPort _port;
     private ConcurrentQueue<string> _lineQueue = new ConcurrentQueue<string>();
@@ -38,8 +39,6 @@ public class ArduinoTest : MonoBehaviour
             _isThreadRunning = true;
             _serialThread = new Thread(ReadSerialLoop);
             _serialThread.Start();
-            Debug.Log($"Successfully opened {targetPort}");
-
             // Start your background thread here...
         }
         catch (System.Exception e)
@@ -135,7 +134,23 @@ public class ArduinoTest : MonoBehaviour
 
     public void ClosePort()
     {
-        _port.Close();
+        if (_port != null)
+        {
+            try
+            {
+                if (_port.IsOpen)
+                {
+                    _port.BaseStream.Close();
+                    _port.Close();
+                    Debug.Log("Closed");
+                }
+
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to close port {_port.PortName}: {e.Message}");
+            }
+        }
     }
     
 }
